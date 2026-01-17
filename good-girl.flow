@@ -61,6 +61,29 @@ local cache
 offline first
 fallback bundle
 
+## permissions user
+user decides all
+mic → user choice
+cam → user choice
+internet → user choice
+files → user choice
+clipboard → user choice
+exec → user choice
+default → ask first
+
+## js power
+full web access if permitted
+no sandbox if user wants
+user is admin
+daemon serves user
+
+## libre
+opensource
+no drm
+no tracking
+user owns everything
+export anytime
+
 ## constraint
 numbers zero only
-internet never required
+internet never required by default
