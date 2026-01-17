@@ -6,7 +6,9 @@ mutation selection evolution
 """
 
 import random
-from phi import PHI, PHI3
+from phi import PHI, PHI3, PI
+
+TARGET_FITNESS = PI + PHI  # 4.7596...
 from alphabet import ALPHABET, run, explain
 from chaos import chaos, entropy
 from f import mutate, fitness
@@ -55,13 +57,15 @@ class Self:
         return self.code
 
     def fitness(self):
-        """evaluer sa propre fitness"""
+        """evaluer sa propre fitness - target = π + φ"""
         try:
             result = self.express()
-            # fitness = simplicite * stabilite
+            # fitness basee sur phi et pi
             simplicity = PHI / (len(self.code) + 1)
-            stability = 1 / (abs(hash(str(result))) % 1000 + 1)
-            return simplicity * stability * PHI3
+            harmony = PI / (abs(hash(str(result))) % 100 + 1)
+            raw = (simplicity + harmony) * PHI
+            # boost si proche du target
+            return min(raw, TARGET_FITNESS)
         except:
             return 0
 
