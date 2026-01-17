@@ -1,9 +1,48 @@
 # good-girl.flow
 
 ## core
-open → guide → dialogue → daemon
+open → zoe → dialogue → daemon.flow
 daemon → observe → sculpt → loop
 uninstall → void
+
+## capabilities
+
+### parler
+tts local piper espeak
+notifications
+messages
+voix personnalisee
+
+### ecouter
+mic → whisper.cpp local
+wake word
+commandes vocales
+conversation
+
+### voir
+cam → capture locale
+screenshot si permis
+ocr tesseract
+detection yolo
+
+### agir
+files si permis
+clipboard si permis
+exec si permis
+internet si permis
+
+## local stack
+whisper.cpp stt
+piper tts
+llama.cpp brain optional
+yolo vision
+tesseract ocr
+
+## permission enforcement
+NEVER bypass
+check before every action
+deny silently if not permitted
+log attempts
 
 ## guide
 accueille

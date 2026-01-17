@@ -1,0 +1,12 @@
+[package]
+name = "daemon"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# zero external deps for core
+# models loaded at runtime if permitted
+
+[[bin]]
+name = "daemon"
+path = "src/main.rs"
