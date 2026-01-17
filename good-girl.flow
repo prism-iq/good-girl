@@ -48,5 +48,19 @@ zero deps
 zero frameworks
 electron jamais
 
+## flow module
+single file
+stdlib only
+zero pip
+zero network
+install copy
+
+## deps pokemon
+need → catch → silent
+local cache
+offline first
+fallback bundle
+
 ## constraint
 numbers zero only
+internet never required
