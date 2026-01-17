@@ -1,0 +1,52 @@
+# good-girl.flow
+
+## core
+open → guide → dialogue → daemon
+daemon → observe → sculpt → loop
+uninstall → void
+
+## guide
+accueille
+pose questions
+comprend essence
+genere daemon
+disparait
+
+## daemon
+personnalite
+voix
+memoire
+wallet
+apprend du user
+se recompile
+
+## gui
+web local
+dialogue
+dashboard
+wallet qr
+api connect
+
+## wallet
+genere a la naissance
+non custodial
+qr + copy
+gratitude on receive
+
+## api
+openai compatible
+cle chiffree local
+fallback offline
+
+## crypto
+kyber dilithium
+seal sign verify
+
+## native
+rust
+zero deps
+zero frameworks
+electron jamais
+
+## constraint
+numbers zero only
