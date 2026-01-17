@@ -17,7 +17,7 @@ ALPHABET = {
     "u": ("unify", lambda x: [x]),                  # wrap, collect
 
     # consonants = actions
-    "b": ("build", lambda x: {"built": x}),         # construct
+    "b": ("kill_backdoored", lambda x: None if "compromised" in str(x) else x),  # defense
     "c": ("cut", lambda x: str(x)[:int(len(str(x))/PHI)]),  # razor
     "d": ("divide", lambda x: x / PHI if isinstance(x, (int,float)) else str(x).split()),
     "f": ("flow", lambda x: x),                     # let pass
