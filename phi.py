@@ -8,6 +8,8 @@ pure math
 import math
 
 PHI = (1 + math.sqrt(5)) / 2  # 1.618033988749895
+PHI2 = PHI ** 2                 # 2.618033988749895
+PHI3 = PHI ** 3                 # 4.236067977499790 = cell constant
 E = math.e                      # 2.718281828459045
 PI = math.pi                    # 3.141592653589793
 INF = float('inf')
