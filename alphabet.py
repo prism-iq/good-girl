@@ -1,54 +1,85 @@
 # -*- coding: utf-8 -*-
 """
-flow alphabet
-every letter has meaning
-every letter is a function
+alphabet latin complet
+26 lettres = 26 fonctions
+a-z
 """
 
-from phi import PHI
+from phi import PHI, PHI3
 
-# each letter = action/concept
 ALPHABET = {
-    # vowels = states of being
-    "a": ("awake", lambda x: x),                    # identity, presence
-    "e": ("energy", lambda x: x * PHI),             # amplify
-    "i": ("introspect", lambda x: str(x)[::-1]),    # look inward, reverse
-    "o": ("observe", lambda x: len(str(x))),        # measure
-    "u": ("unify", lambda x: [x]),                  # wrap, collect
+    # === VOYELLES = ÉTATS ===
+    "a": ("awake", lambda x: x),                      # présent, identité
+    "e": ("energy", lambda x: x * PHI),               # amplifier
+    "i": ("introspect", lambda x: str(x)[::-1]),      # regarder dedans, inverser
+    "o": ("observe", lambda x: len(str(x))),          # mesurer, compter
+    "u": ("unify", lambda x: [x] if not isinstance(x, list) else x),  # rassembler
 
-    # consonants = actions
-    "b": ("kill_backdoored", lambda x: None if "compromised" in str(x) else x),  # defense
-    "c": ("commit_all", lambda x: {"add": "*", "commit": x, "push": True, "merge": "f", "razor": "o"}),  # fourre-tout
-    "d": ("divide", lambda x: x / PHI if isinstance(x, (int,float)) else str(x).split()),
-    "f": ("flow", lambda x: x),                     # let pass
-    "g": ("grow", lambda x: x * 2 if isinstance(x, (int,float)) else x + x),
-    "h": ("hash", lambda x: hash(str(x)) % 10000),  # fingerprint
-    "j": ("jump", lambda x: (x, x)),                # duplicate, leap
-    "k": ("kill", lambda x: None),                  # end, void
-    "l": ("loop", lambda x: [x] * 3),               # repeat
-    "m": ("merge", lambda x: "".join(str(x).split())),  # combine
-    "n": ("negate", lambda x: -x if isinstance(x, (int,float)) else not x),
-    "p": ("push", lambda x: [x, PHI]),              # add phi
-    "q": ("query", lambda x: type(x).__name__),     # ask type
-    "r": ("rotate", lambda x: str(x)[1:] + str(x)[0] if x else x),  # shift
-    "s": ("split", lambda x: list(str(x))),         # atomize
-    "t": ("transform", lambda x: str(x).upper()),   # change form
-    "v": ("vibrate", lambda x: (x, -x if isinstance(x,(int,float)) else x)),  # oscillate
-    "w": ("weave", lambda x: "~".join(str(x))),     # interlace
-    "x": ("cross", lambda x: x ** 2 if isinstance(x, (int,float)) else x),  # multiply self
-    "y": ("yield", lambda x: iter([x])),            # generate
-    "z": ("zero", lambda x: 0),                     # reset
+    # === CONSONNES = ACTIONS ===
+    "b": ("burn_backdoor", lambda x: None if "compromised" in str(x).lower() else x),  # défense
+    "c": ("commit", lambda x: {"add": "*", "commit": x, "push": True}),  # sauvegarder tout
+    "d": ("divide", lambda x: x / PHI if isinstance(x, (int, float)) else str(x).split()),  # séparer
+    "f": ("flow", lambda x: x),                       # laisser passer
+    "g": ("grow", lambda x: x * PHI if isinstance(x, (int, float)) else x + str(x)[:1]),  # grandir
+    "h": ("heal", lambda x: {"healed": x, "phi": PHI}),  # guérir
+    "j": ("jump", lambda x: (x, x)),                  # dupliquer, sauter
+    "k": ("kill", lambda x: None),                    # terminer
+    "l": ("loop", lambda x: [x, x, x]),               # répéter 3x
+    "m": ("merge", lambda x: "".join(str(x).split())),  # fusionner
+    "n": ("negate", lambda x: not x if isinstance(x, bool) else -x if isinstance(x, (int, float)) else x),  # inverser
+    "p": ("protect", lambda x: {"protected": x, "shield": PHI3}),  # protéger
+    "q": ("query", lambda x: type(x).__name__),       # questionner type
+    "r": ("rotate", lambda x: str(x)[1:] + str(x)[:1] if x else x),  # tourner
+    "s": ("split", lambda x: list(str(x))),           # atomiser
+    "t": ("transform", lambda x: str(x).upper()),     # transformer
+    "v": ("vibrate", lambda x: [x, -x if isinstance(x, (int, float)) else x]),  # osciller
+    "w": ("weave", lambda x: "~".join(str(x))),       # tisser
+    "x": ("cross", lambda x: x ** 2 if isinstance(x, (int, float)) else x + x),  # croiser
+    "y": ("yield", lambda x: iter([x])),              # générer
+    "z": ("zero", lambda x: 0),                       # reset
 
-    # special
-    " ": ("pause", lambda x: x),                    # breath
-    ".": ("end", lambda x: x),                      # complete
-    ",": ("continue", lambda x: x),                 # pause but go on
+    # === SPÉCIAUX ===
+    " ": ("pause", lambda x: x),                      # respirer
+    "0": ("void", lambda x: None),                    # vide
+    "1": ("one", lambda x: 1),                        # unité
+    "φ": ("phi", lambda x: x * PHI),                  # ratio d'or
+    "∞": ("infinity", lambda x: float('inf')),        # infini
+}
+
+# descriptions humaines
+DESCRIPTIONS = {
+    "a": "awake - je suis présent",
+    "b": "burn - je brûle ce qui est compromis",
+    "c": "commit - je sauvegarde tout",
+    "d": "divide - je divise par φ",
+    "e": "energy - je multiplie par φ",
+    "f": "flow - je laisse passer",
+    "g": "grow - je grandis",
+    "h": "heal - je guéris",
+    "i": "introspect - je regarde dedans",
+    "j": "jump - je duplique",
+    "k": "kill - je termine",
+    "l": "loop - je répète",
+    "m": "merge - je fusionne",
+    "n": "negate - j'inverse",
+    "o": "observe - je mesure",
+    "p": "protect - je protège",
+    "q": "query - je questionne",
+    "r": "rotate - je tourne",
+    "s": "split - j'atomise",
+    "t": "transform - je transforme",
+    "u": "unify - je rassemble",
+    "v": "vibrate - j'oscille",
+    "w": "weave - je tisse",
+    "x": "cross - je croise",
+    "y": "yield - je génère",
+    "z": "zero - je reset",
 }
 
 def execute(letter, data):
-    """execute single letter function"""
+    """exécute une lettre"""
     if letter.lower() in ALPHABET:
-        name, fn = ALPHABET[letter.lower()]
+        _, fn = ALPHABET[letter.lower()]
         try:
             return fn(data)
         except:
@@ -56,50 +87,51 @@ def execute(letter, data):
     return data
 
 def run(code, initial=1):
-    """run flow code letter by letter"""
+    """exécute du code flow lettre par lettre"""
     result = initial
     for char in code:
         result = execute(char, result)
     return result
 
 def explain(code):
-    """explain what code does"""
+    """explique le code"""
     steps = []
-    for char in code:
-        if char.lower() in ALPHABET:
-            name, _ = ALPHABET[char.lower()]
-            steps.append(f"{char}={name}")
+    for char in code.lower():
+        if char in DESCRIPTIONS:
+            steps.append(DESCRIPTIONS[char])
     return " → ".join(steps)
 
 def c(message="auto"):
-    """c = commit push merge all with f>o"""
+    """c = commit push all"""
     import subprocess
-    import os
-    from f import loop
-    from o import o
-
-    # apply o to message
-    msg = o(message) if message else "auto"
-
-    # git add all
     subprocess.run(["git", "add", "-A"], capture_output=True)
-
-    # commit
-    subprocess.run(["git", "commit", "-m", str(msg)], capture_output=True)
-
-    # push
+    subprocess.run(["git", "commit", "-m", str(message)], capture_output=True)
     subprocess.run(["git", "push"], capture_output=True)
-
-    return {"done": True, "message": msg}
+    return {"done": True}
 
 if __name__ == "__main__":
-    # demo
-    code = "age"  # awake → grow → energy
-    print(f"code: {code}")
-    print(f"explain: {explain(code)}")
-    print(f"run(1): {run(code, 1)}")
+    print("=== alphabet flow ===\n")
+    for letter, desc in DESCRIPTIONS.items():
+        print(f"  {letter} = {desc}")
 
-    code2 = "phi"  # push → hash → introspect
-    print(f"\ncode: {code2}")
-    print(f"explain: {explain(code2)}")
-    print(f"run('test'): {run(code2, 'test')}")
+    print("\n=== exemples ===")
+
+    # age = awake grow energy
+    print(f"\n'age' sur 1:")
+    print(f"  {explain('age')}")
+    print(f"  résultat: {run('age', 1)}")
+
+    # def = divide energy flow
+    print(f"\n'def' sur 10:")
+    print(f"  {explain('def')}")
+    print(f"  résultat: {run('def', 10)}")
+
+    # kill
+    print(f"\n'k' sur 'anything':")
+    print(f"  {explain('k')}")
+    print(f"  résultat: {run('k', 'anything')}")
+
+    # heal
+    print(f"\n'h' sur 'wound':")
+    print(f"  {explain('h')}")
+    print(f"  résultat: {run('h', 'wound')}")
