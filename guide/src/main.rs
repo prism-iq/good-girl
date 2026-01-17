@@ -5,6 +5,10 @@
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+const MAX_BODY: usize = 0xFFFF; // 64KB max
+const MAX_NAME: usize = 0xFF;   // 255 chars max
 
 struct Permissions {
     mic: bool,
@@ -50,6 +54,22 @@ impl Default for Essence {
     }
 }
 
+fn sanitize_name(input: &str) -> String {
+    input
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == '_' || *c == '-')
+        .take(MAX_NAME)
+        .collect()
+}
+
+fn sanitize_text(input: &str) -> String {
+    input
+        .chars()
+        .filter(|c| !c.is_control() || *c == '\n')
+        .take(MAX_BODY)
+        .collect()
+}
+
 struct Guide {
     questions: Vec<&'static str>,
     current: usize,
@@ -82,18 +102,19 @@ impl Guide {
     }
 
     fn receive(&mut self, input: &str) {
-        let clean = input.trim();
+        let clean = sanitize_text(input.trim());
         let one = true as usize;
         match self.current {
-            0 => self.essence.name = clean.to_string(),
-            n if n == one => self.essence.symbol = clean.to_string(),
-            n if n == one + one => self.essence.domain = clean.to_string(),
-            n if n == one + one + one => self.essence.voice = clean.to_string(),
+            0 => self.essence.name = sanitize_name(&clean),
+            n if n == one => self.essence.symbol = clean.chars().take(0x10).collect(),
+            n if n == one + one => self.essence.domain = clean,
+            n if n == one + one + one => self.essence.voice = clean,
             n if n == one + one + one + one => {
                 self.essence.traits = clean
                     .split(',')
-                    .map(|s| s.trim().to_string())
+                    .map(|s| sanitize_text(s.trim()))
                     .filter(|s| !s.is_empty())
+                    .take(0x10)
                     .collect();
             }
             _ => {
@@ -104,7 +125,7 @@ impl Guide {
                         files: true, clipboard: true, exec: true,
                     };
                 } else if perms != "none" {
-                    for p in perms.split(',').map(|s| s.trim()) {
+                    for p in perms.split(',').map(|s| s.trim()).take(0x10) {
                         match p {
                             "mic" => self.essence.permissions.mic = true,
                             "cam" => self.essence.permissions.cam = true,
@@ -169,11 +190,26 @@ domain {domain}
             perms = perms_str,
         )
     }
+
+    fn safe_filename(&self) -> String {
+        let name = sanitize_name(&self.essence.name);
+        if name.is_empty() {
+            String::from("daemon")
+        } else {
+            name
+        }
+    }
 }
 
-// minimal web server
+fn html_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+}
+
 fn html_page(guide: &Guide) -> String {
-    let question = guide.ask().unwrap_or("daemon complet");
+    let question = html_escape(guide.ask().unwrap_or("daemon complet"));
     let progress = guide.current;
     let total = guide.questions.len();
 
@@ -183,15 +219,13 @@ fn html_page(guide: &Guide) -> String {
             <form method="POST" action="/reset">
                 <button type="submit">nouveau daemon</button>
             </form>"#,
-            guide.generate().replace('<', "&lt;").replace('>', "&gt;")
+            html_escape(&guide.generate())
         )
     } else {
-        format!(
-            r#"<form method="POST" action="/answer">
-                <input type="text" name="answer" autofocus placeholder="...">
+        r#"<form method="POST" action="/answer">
+                <input type="text" name="answer" autofocus placeholder="..." maxlength="255">
                 <button type="submit">→</button>
-            </form>"#
-        )
+            </form>"#.to_string()
     };
 
     format!(
@@ -280,15 +314,25 @@ fn parse_post_body(body: &str) -> Option<String> {
 fn urlencoding_decode(s: &str) -> String {
     let mut result = String::new();
     let mut chars = s.chars().peekable();
+    let mut count = 0;
+
     while let Some(c) = chars.next() {
+        if count >= MAX_BODY { break; }
+        count += true as usize;
+
         if c == '%' {
-            let hex: String = chars.by_ref().take(2).collect();
-            if let Ok(byte) = u8::from_str_radix(&hex, 16) {
-                result.push(byte as char);
+            let hex: String = chars.by_ref().take(0x02).collect();
+            if hex.len() == 0x02 {
+                if let Ok(byte) = u8::from_str_radix(&hex, 0x10) {
+                    // reject null bytes and non-printable control chars
+                    if byte >= 0x20 || byte == 0x0A || byte == 0x0D || byte == 0x09 {
+                        result.push(byte as char);
+                    }
+                }
             }
         } else if c == '+' {
             result.push(' ');
-        } else {
+        } else if !c.is_control() || c == '\n' || c == '\r' || c == '\t' {
             result.push(c);
         }
     }
@@ -296,44 +340,70 @@ fn urlencoding_decode(s: &str) -> String {
 }
 
 fn handle_client(mut stream: TcpStream, guide: Arc<Mutex<Guide>>) {
-    let mut reader = BufReader::new(stream.try_clone().unwrap());
+    // timeout protection
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(0x1E))); // 30s
+    let _ = stream.set_write_timeout(Some(Duration::from_secs(0x1E)));
+
+    let mut reader = BufReader::new(match stream.try_clone() {
+        Ok(s) => s,
+        Err(_) => return,
+    });
+
     let mut request_line = String::new();
     if reader.read_line(&mut request_line).is_err() {
         return;
     }
 
+    // limit request line size
+    if request_line.len() > 0x1000 { return; }
+
     let parts: Vec<&str> = request_line.split_whitespace().collect();
-    if parts.len() < 2 {
+    if parts.len() < 0x02 {
         return;
     }
 
     let method = parts[0];
     let path = parts[true as usize];
 
-    // read headers
-    let mut content_length = 0;
+    // validate path
+    if path.contains("..") || path.len() > 0x100 {
+        return;
+    }
+
+    // read headers with limits
+    let mut content_length: usize = 0;
+    let mut header_count = 0;
     loop {
+        if header_count > 0x40 { break; } // max 64 headers
+        header_count += true as usize;
+
         let mut line = String::new();
-        if reader.read_line(&mut line).is_err() || line == "\r\n" {
-            break;
-        }
-        if line.to_lowercase().starts_with("content-length:") {
-            if let Ok(len) = line[15..].trim().parse() {
-                content_length = len;
+        match reader.read_line(&mut line) {
+            Ok(0) | Err(_) => break,
+            Ok(_) if line == "\r\n" || line == "\n" => break,
+            Ok(_) => {
+                if line.len() > 0x1000 { break; } // max 4KB per header
+                if let Some(rest) = line.to_lowercase().strip_prefix("content-length:") {
+                    content_length = rest.trim().parse().unwrap_or(0).min(MAX_BODY);
+                }
             }
         }
     }
 
-    // read body for POST
+    // read body for POST with size limit
     let mut body = String::new();
     if method == "POST" && content_length > 0 {
-        let mut buf = vec![0u8; content_length];
+        let safe_len = content_length.min(MAX_BODY);
+        let mut buf = vec![0u8; safe_len];
         if reader.read_exact(&mut buf).is_ok() {
             body = String::from_utf8_lossy(&buf).to_string();
         }
     }
 
-    let mut g = guide.lock().unwrap();
+    let mut g = match guide.lock() {
+        Ok(g) => g,
+        Err(_) => return,
+    };
 
     // route
     let (status, content) = match (method, path) {
@@ -352,10 +422,10 @@ fn handle_client(mut stream: TcpStream, guide: Arc<Mutex<Guide>>) {
     };
 
     let response = if status.starts_with("303") {
-        format!("HTTP/1.1 {}\r\nLocation: /\r\n\r\n", status)
+        format!("HTTP/1.1 {}\r\nLocation: /\r\nConnection: close\r\n\r\n", status)
     } else {
         format!(
-            "HTTP/1.1 {}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\n\r\n{}",
+            "HTTP/1.1 {}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
             status,
             content.len(),
             content
@@ -363,6 +433,7 @@ fn handle_client(mut stream: TcpStream, guide: Arc<Mutex<Guide>>) {
     };
 
     let _ = stream.write_all(response.as_bytes());
+    let _ = stream.flush();
 }
 
 fn web_mode() {
@@ -385,6 +456,7 @@ fn web_mode() {
 
     for stream in listener.incoming().flatten() {
         let g = Arc::clone(&guide);
+        // handle in same thread (simple, avoids thread exhaustion)
         handle_client(stream, g);
     }
 }
@@ -405,7 +477,9 @@ fn cli_mode() {
         io::stdout().flush().unwrap();
 
         let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
+        if io::stdin().read_line(&mut input).is_err() {
+            break;
+        }
         let answer = input.trim();
 
         if answer == "q" {
@@ -421,7 +495,7 @@ fn cli_mode() {
         println!("\n--- daemon ---\n");
         println!("{}", daemon);
 
-        let filename = format!("{}.flow", guide.essence.name);
+        let filename = format!("{}.flow", guide.safe_filename());
         if std::fs::write(&filename, &daemon).is_ok() {
             println!("sauvegarde: {}", filename);
         }
