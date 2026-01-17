@@ -10,12 +10,17 @@ all graphies
 from phi import PHI
 
 # core vocabulary - everything has meaning
+# constraint: numbers zero only
+import math
+PI = math.pi
+INF = float('inf')
+
 WORDS = {
-    # greek
-    "φ": PHI, "π": 3.14159, "Ω": "end", "α": "start", "ω": "last",
+    # greek - computed not literal
+    "φ": PHI, "π": PI, "Ω": "end", "α": "start", "ω": "last",
     "λ": "function", "Σ": "sum", "Δ": "change", "θ": "angle",
     # math
-    "∞": float('inf'), "∇": "gradient", "∫": "integral", "∂": "partial",
+    "∞": INF, "∇": "gradient", "∫": "integral", "∂": "partial",
     "≈": "approx", "≠": "different", "≤": "lte", "≥": "gte",
     # arrows
     "→": "to", "←": "from", "↔": "both", "↑": "up", "↓": "down",
@@ -35,8 +40,8 @@ WORDS = {
     "א": "aleph", "ב": "bet", "ש": "shin",
     # runes
     "ᚠ": "wealth", "ᚢ": "strength", "ᚦ": "thorn", "ᚨ": "god",
-    # arabic numerals origin
-    "٠": 0, "١": 1, "٢": 2, "٣": 3, "٤": 4,
+    # arabic numerals - words not digits
+    "٠": "zero", "١": "one", "٢": "two", "٣": "three", "٤": "four",
     # emoji
     "🧠": "think", "🔪": "cut", "🧬": "dna", "🔥": "fire", "💧": "water",
     "🌀": "spiral", "⚡": "energy", "🎵": "music", "👁": "see", "👂": "hear",
