@@ -18,7 +18,7 @@ ALPHABET = {
 
     # consonants = actions
     "b": ("kill_backdoored", lambda x: None if "compromised" in str(x) else x),  # defense
-    "c": ("cut", lambda x: str(x)[:int(len(str(x))/PHI)]),  # razor
+    "c": ("commit_all", lambda x: {"add": "*", "commit": x, "push": True, "merge": "f", "razor": "o"}),  # fourre-tout
     "d": ("divide", lambda x: x / PHI if isinstance(x, (int,float)) else str(x).split()),
     "f": ("flow", lambda x: x),                     # let pass
     "g": ("grow", lambda x: x * 2 if isinstance(x, (int,float)) else x + x),
@@ -70,6 +70,27 @@ def explain(code):
             name, _ = ALPHABET[char.lower()]
             steps.append(f"{char}={name}")
     return " → ".join(steps)
+
+def c(message="auto"):
+    """c = commit push merge all with f>o"""
+    import subprocess
+    import os
+    from f import loop
+    from o import o
+
+    # apply o to message
+    msg = o(message) if message else "auto"
+
+    # git add all
+    subprocess.run(["git", "add", "-A"], capture_output=True)
+
+    # commit
+    subprocess.run(["git", "commit", "-m", str(msg)], capture_output=True)
+
+    # push
+    subprocess.run(["git", "push"], capture_output=True)
+
+    return {"done": True, "message": msg}
 
 if __name__ == "__main__":
     # demo
