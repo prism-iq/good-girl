@@ -1,9 +1,10 @@
 # good-girl.flow
+# pour luv resval (1music) - "j'balance des flammes a chaque ligne"
 
 ## core
 open → zoe → dialogue → daemon.flow
 daemon → observe → sculpt → loop
-uninstall → void
+desinstall → cycle → renaissance
 
 ## capabilities
 

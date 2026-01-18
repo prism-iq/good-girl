@@ -1,0 +1,75 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: guide-linux
+            daemon_artifact: daemon-linux
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: guide-windows.exe
+            daemon_artifact: daemon-windows.exe
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: guide-macos
+            daemon_artifact: daemon-macos
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build guide
+        run: |
+          cd guide
+          cargo build --release --target ${{ matrix.target }}
+
+      - name: Build daemon
+        run: |
+          cd daemon
+          cargo build --release --target ${{ matrix.target }}
+
+      - name: Upload guide
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: guide/target/${{ matrix.target }}/release/guide${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+
+      - name: Upload daemon
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.daemon_artifact }}
+          path: daemon/target/${{ matrix.target }}/release/daemon${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - uses: actions/download-artifact@v4
+
+      - name: Create checksums
+        run: |
+          sha256sum guide-linux/guide > checksums.txt
+          sha256sum guide-windows.exe/guide.exe >> checksums.txt
+          sha256sum guide-macos/guide >> checksums.txt
+          sha256sum daemon-linux/daemon >> checksums.txt
+          sha256sum daemon-windows.exe/daemon.exe >> checksums.txt
+          sha256sum daemon-macos/daemon >> checksums.txt
+          cat checksums.txt

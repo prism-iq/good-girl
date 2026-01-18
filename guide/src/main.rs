@@ -1,6 +1,10 @@
 // zoe - guide who creates daemons
+//
+// pour luv resval - "c'est bientot la fin donc allume-toi bien"
+//
 // inspired by pokemon mystery dungeon red
 // mbti through conversation, no checkboxes
+// pas de mythos, pas de masque, que du vrai
 
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
