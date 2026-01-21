@@ -3,6 +3,12 @@
 φ = the only constant
 replaces all LLM calls
 pure math
+
+Le ratio d'or. La proportion divine.
+Ce qui relie le petit au grand, la partie au tout.
+Ni bon ni mauvais. Une force. Comme le feu.
+
+φ = 1.618033988749895
 """
 
 import math
