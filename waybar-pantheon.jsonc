@@ -1,0 +1,48 @@
+// Waybar module configuration for Pantheon
+// Ajoute ceci dans ton ~/.config/waybar/config.jsonc
+
+// Dans "modules-left", "modules-center", ou "modules-right", ajoute:
+// "custom/pantheon"
+
+// Puis ajoute ce module dans la config:
+{
+    "custom/pantheon": {
+        "exec": "/home/flow/projects/good-girl/statusbar.sh waybar",
+        "return-type": "json",
+        "interval": 5,
+        "format": "{}",
+        "tooltip": true,
+        "on-click": "/home/flow/projects/good-girl/leonardo web"
+    },
+
+    "custom/phi": {
+        "exec": "curl -s http://localhost:9600/status 2>/dev/null | python3 -c \"import sys,json; d=json.load(sys.stdin); print(f'φ {d[\\\"daemons\\\"][\\\"leonardo\\\"][\\\"heartbeats\\\"]}')\" 2>/dev/null || echo 'φ ○'",
+        "interval": 2,
+        "format": "{}",
+        "tooltip-format": "Leonardo da Vinci - Pantheon",
+        "on-click": "firefox http://localhost:9600"
+    },
+
+    "custom/system": {
+        "exec": "/home/flow/projects/good-girl/statusbar.sh",
+        "interval": 2,
+        "format": "{}",
+        "tooltip": false
+    }
+}
+
+// CSS pour le style (ajouter dans ~/.config/waybar/style.css):
+/*
+#custom-pantheon {
+    background-color: #1a1a2e;
+    color: #c9a227;
+    padding: 0 10px;
+    border-radius: 5px;
+    margin: 2px;
+}
+
+#custom-phi {
+    color: #c9a227;
+    font-weight: bold;
+}
+*/

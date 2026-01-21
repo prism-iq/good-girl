@@ -1,0 +1,108 @@
+#!/bin/bash
+# ═══════════════════════════════════════════════════════════════════════════════
+# LEONARDO/PANTHEON - Launcher
+# Right Ctrl → Ouvre le chat web
+# ═══════════════════════════════════════════════════════════════════════════════
+
+PORT=9600
+DIR="$(dirname "$(realpath "$0")")"
+URL="http://localhost:$PORT"
+LOG="/tmp/pantheon.log"
+
+cd "$DIR"
+
+# Couleurs
+G='\033[0;32m'  # Vert
+Y='\033[1;33m'  # Jaune
+C='\033[0;36m'  # Cyan
+N='\033[0m'     # Normal
+
+# Vérifie si le serveur tourne
+check_server() {
+    curl -s "$URL/status" > /dev/null 2>&1
+    return $?
+}
+
+# Démarre le serveur
+start_server() {
+    echo -e "${Y}☽ Réveil du Panthéon...${N}"
+    nohup python3 leonardo_server.py > "$LOG" 2>&1 &
+
+    # Attend que le serveur soit prêt
+    for i in {1..10}; do
+        sleep 0.5
+        if check_server; then
+            echo -e "${G}φ Panthéon vivant sur $URL${N}"
+            return 0
+        fi
+    done
+
+    echo -e "\033[0;31mErreur: voir $LOG${N}"
+    return 1
+}
+
+# Status
+show_status() {
+    if check_server; then
+        echo -e "${G}φ Panthéon vivant${N}"
+        curl -s "$URL/status" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+print(f'  Heartbeat: {d.get(\"heartbeat\", \"?\")}')
+print(f'  φ = {d.get(\"phi\", \"?\"):.10f}')
+for name, daemon in d.get('daemons', {}).items():
+    print(f'  {daemon[\"symbol\"]} {name}: {daemon[\"heartbeats\"]} beats')
+"
+    else
+        echo -e "${Y}☽ Panthéon endormi${N}"
+    fi
+}
+
+# Main
+case "${1:-web}" in
+    start|s)
+        if check_server; then
+            echo -e "${G}φ Déjà vivant${N}"
+        else
+            start_server
+        fi
+        ;;
+
+    stop)
+        echo -e "${Y}☽ Endormissement...${N}"
+        pkill -f "leonardo_server.py" 2>/dev/null
+        echo -e "${C}✧ Bonne nuit.${N}"
+        ;;
+
+    restart|r)
+        pkill -f "leonardo_server.py" 2>/dev/null
+        sleep 1
+        start_server
+        ;;
+
+    status)
+        show_status
+        ;;
+
+    talk|t)
+        shift
+        python3 "$DIR/talk.py" "$@"
+        ;;
+
+    cli)
+        python3 "$DIR/pantheon.py"
+        ;;
+
+    web|w|*)
+        # Assure que le serveur tourne
+        if ! check_server; then
+            start_server || exit 1
+        fi
+
+        # Ouvre Firefox
+        firefox "$URL" 2>/dev/null &
+
+        # Notification
+        notify-send -t 2000 "φ Panthéon" "$URL" 2>/dev/null
+        ;;
+esac
