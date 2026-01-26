@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mycelium Runner — Contract Your Daemons</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Fira+Code:wght@300;400;500&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --glow-gold: #ffd700;
+            --glow-cyan: #00fff7;
+            --glow-magenta: #ff00ff;
+            --mycelium-white: rgba(255, 255, 255, 0.03);
+            --deep-void: #0a0a0f;
+            --spore-green: #7fff00;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--deep-void);
+            font-family: 'Fira Code', monospace;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background:
+                radial-gradient(ellipse at 50% 100%, rgba(127, 255, 0, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 20% 50%, rgba(0, 255, 247, 0.03) 0%, transparent 40%),
+                radial-gradient(ellipse at 80% 30%, rgba(255, 0, 255, 0.03) 0%, transparent 40%),
+                var(--deep-void);
+        }
+
+        /* Mycelium network background */
+        #mycelium-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.6;
+        }
+
+        /* Runner lane */
+        #runner-lane {
+            position: absolute;
+            bottom: 15%;
+            left: 0;
+            right: 0;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Player (Golden Teacher mushroom) */
+        #player {
+            position: absolute;
+            left: 15%;
+            bottom: 20%;
+            width: 80px;
+            height: 100px;
+            z-index: 100;
+            transition: transform 0.15s ease-out;
+            filter: drop-shadow(0 0 20px var(--glow-gold)) drop-shadow(0 0 40px rgba(255, 215, 0, 0.5));
+        }
+
+        #player.lane-0 { transform: translateY(60px); }
+        #player.lane-1 { transform: translateY(0); }
+        #player.lane-2 { transform: translateY(-60px); }
+
+        #player svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Daemon cards flying in */
+        .daemon-card {
+            position: absolute;
+            right: -300px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, rgba(20, 20, 30, 0.95), rgba(10, 10, 20, 0.98));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-family: 'Fira Code', monospace;
+            color: #fff;
+            min-width: 180px;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .daemon-card.lane-0 { bottom: 18%; }
+        .daemon-card.lane-1 { bottom: 28%; }
+        .daemon-card.lane-2 { bottom: 38%; }
+
+        .daemon-card:hover {
+            border-color: var(--glow-cyan);
+            box-shadow: 0 0 30px rgba(0, 255, 247, 0.3);
+        }
+
+        .daemon-card .name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--glow-cyan);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        .daemon-card .pid {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .daemon-card .cpu {
+            font-size: 10px;
+            color: var(--spore-green);
+            margin-top: 4px;
+        }
+
+        .daemon-card.contracted {
+            border-color: var(--glow-gold) !important;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.6);
+            animation: contract-pulse 0.5s ease-out;
+        }
+
+        .daemon-card.rejected {
+            opacity: 0.3;
+            border-color: rgba(255, 0, 0, 0.5);
+            transform: scale(0.9);
+        }
+
+        @keyframes contract-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* HUD */
+        #hud {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            right: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 200;
+            pointer-events: none;
+        }
+
+        #score-panel {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        #score-panel h1 {
+            font-size: 12px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 4px;
+            margin-bottom: 8px;
+        }
+
+        #speed-display {
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--glow-cyan);
+            text-shadow: 0 0 30px var(--glow-cyan);
+            line-height: 1;
+        }
+
+        #speed-unit {
+            font-size: 14px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.5);
+            margin-left: 8px;
+        }
+
+        /* Contracted daemons panel */
+        #contracted-panel {
+            text-align: right;
+            max-width: 300px;
+        }
+
+        #contracted-panel h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 4px;
+            margin-bottom: 12px;
+        }
+
+        #contracted-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .contracted-item {
+            font-size: 12px;
+            color: var(--glow-gold);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            animation: fadeIn 0.3s ease-out;
+            text-align: right;
+        }
+
+        .contracted-item.direct {
+            color: var(--glow-magenta);
+            text-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
+            font-weight: 500;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Counter display */
+        #counter-display {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            font-family: 'Orbitron', sans-serif;
+            z-index: 200;
+        }
+
+        .counter-row {
+            display: flex;
+            align-items: baseline;
+            gap: 15px;
+            margin-bottom: 8px;
+        }
+
+        .counter-label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 2px;
+            min-width: 100px;
+        }
+
+        .counter-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .counter-value.direct {
+            color: var(--glow-magenta);
+            text-shadow: 0 0 20px var(--glow-magenta);
+        }
+
+        .counter-value.contracted {
+            color: var(--glow-gold);
+            text-shadow: 0 0 20px var(--glow-gold);
+        }
+
+        .counter-max {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Controls hint */
+        #controls-hint {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+            text-align: right;
+            line-height: 1.8;
+            z-index: 200;
+        }
+
+        #controls-hint kbd {
+            display: inline-block;
+            padding: 3px 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin: 0 3px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Start screen */
+        #start-screen {
+            position: absolute;
+            inset: 0;
+            background: rgba(10, 10, 15, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+            transition: opacity 0.5s ease;
+        }
+
+        #start-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #start-screen h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--glow-gold);
+            text-shadow: 0 0 60px var(--glow-gold);
+            margin-bottom: 20px;
+            letter-spacing: 8px;
+        }
+
+        #start-screen p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            margin-bottom: 40px;
+            max-width: 400px;
+            text-align: center;
+            line-height: 1.8;
+        }
+
+        #start-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            padding: 16px 48px;
+            background: transparent;
+            border: 2px solid var(--glow-gold);
+            color: var(--glow-gold);
+            cursor: pointer;
+            letter-spacing: 4px;
+            transition: all 0.3s ease;
+        }
+
+        #start-btn:hover {
+            background: var(--glow-gold);
+            color: var(--deep-void);
+            box-shadow: 0 0 40px var(--glow-gold);
+        }
+
+        /* Game over screen */
+        #gameover-screen {
+            position: absolute;
+            inset: 0;
+            background: rgba(10, 10, 15, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+        }
+
+        #gameover-screen.visible {
+            display: flex;
+        }
+
+        #gameover-screen h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 36px;
+            color: var(--glow-magenta);
+            text-shadow: 0 0 40px var(--glow-magenta);
+            margin-bottom: 30px;
+            letter-spacing: 6px;
+        }
+
+        #final-contracted {
+            margin-bottom: 40px;
+        }
+
+        #final-contracted h2 {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 15px;
+            letter-spacing: 3px;
+        }
+
+        #final-list {
+            text-align: left;
+        }
+
+        #final-list .final-item {
+            font-size: 14px;
+            color: var(--glow-gold);
+            margin-bottom: 8px;
+        }
+
+        #final-list .final-item.direct {
+            color: var(--glow-magenta);
+            font-weight: 500;
+        }
+
+        #restart-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            padding: 14px 40px;
+            background: transparent;
+            border: 2px solid var(--glow-cyan);
+            color: var(--glow-cyan);
+            cursor: pointer;
+            letter-spacing: 3px;
+            transition: all 0.3s ease;
+        }
+
+        #restart-btn:hover {
+            background: var(--glow-cyan);
+            color: var(--deep-void);
+            box-shadow: 0 0 30px var(--glow-cyan);
+        }
+
+        /* Particles */
+        .spore {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--spore-green);
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0.6;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            50% { transform: translateY(-20px) translateX(10px); }
+        }
+
+        /* Pulse effect when running */
+        #pulse-overlay {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 15% 75%, rgba(255, 215, 0, 0.1) 0%, transparent 30%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+
+        #pulse-overlay.active {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="mycelium-canvas"></canvas>
+        <div id="pulse-overlay"></div>
+
+        <!-- Player mushroom -->
+        <div id="player" class="lane-1">
+            <svg viewBox="0 0 80 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Stem -->
+                <path d="M32 100 L32 55 Q32 50 35 48 L45 48 Q48 50 48 55 L48 100" fill="url(#stemGrad)" />
+                <!-- Cap -->
+                <ellipse cx="40" cy="35" rx="38" ry="30" fill="url(#capGrad)" />
+                <!-- Cap spots (Golden Teacher pattern) -->
+                <circle cx="25" cy="30" r="6" fill="rgba(255,255,255,0.3)" />
+                <circle cx="50" cy="25" r="8" fill="rgba(255,255,255,0.25)" />
+                <circle cx="35" cy="45" r="5" fill="rgba(255,255,255,0.2)" />
+                <circle cx="55" cy="40" r="4" fill="rgba(255,255,255,0.2)" />
+                <!-- Glow -->
+                <ellipse cx="40" cy="35" rx="38" ry="30" fill="url(#glowGrad)" />
+
+                <defs>
+                    <linearGradient id="stemGrad" x1="40" y1="100" x2="40" y2="48" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#f5f5dc" />
+                        <stop offset="100%" stop-color="#fffacd" />
+                    </linearGradient>
+                    <radialGradient id="capGrad" cx="0.4" cy="0.3" r="0.7">
+                        <stop offset="0%" stop-color="#ffd700" />
+                        <stop offset="60%" stop-color="#daa520" />
+                        <stop offset="100%" stop-color="#b8860b" />
+                    </radialGradient>
+                    <radialGradient id="glowGrad" cx="0.5" cy="0.5" r="0.5">
+                        <stop offset="0%" stop-color="rgba(255,215,0,0.3)" />
+                        <stop offset="100%" stop-color="rgba(255,215,0,0)" />
+                    </radialGradient>
+                </defs>
+            </svg>
+        </div>
+
+        <div id="runner-lane"></div>
+
+        <!-- HUD -->
+        <div id="hud">
+            <div id="score-panel">
+                <h1>VELOCITY</h1>
+                <span id="speed-display">0</span><span id="speed-unit">d/s</span>
+            </div>
+            <div id="contracted-panel">
+                <h2>CONTRACTED</h2>
+                <div id="contracted-list"></div>
+            </div>
+        </div>
+
+        <div id="counter-display">
+            <div class="counter-row">
+                <span class="counter-label">DIRECT</span>
+                <span class="counter-value direct" id="direct-count">0</span>
+                <span class="counter-max">/ 3</span>
+            </div>
+            <div class="counter-row">
+                <span class="counter-label">CONTRACTED</span>
+                <span class="counter-value contracted" id="contracted-count">0</span>
+                <span class="counter-max">/ 10</span>
+            </div>
+        </div>
+
+        <div id="controls-hint">
+            <kbd>↑</kbd><kbd>↓</kbd> move lanes<br>
+            <kbd>SPACE</kbd> contract daemon<br>
+            <kbd>SHIFT+SPACE</kbd> direct contract
+        </div>
+
+        <!-- Start screen -->
+        <div id="start-screen">
+            <h1>MYCELIUM</h1>
+            <p>
+                Run through your daemon network.<br>
+                Contract the ones that call to you.<br>
+                3 direct. 10 contracted. Trust your instinct.
+            </p>
+            <button id="start-btn">BEGIN</button>
+        </div>
+
+        <!-- Game over screen -->
+        <div id="gameover-screen">
+            <h1>NETWORK COMPLETE</h1>
+            <div id="final-contracted">
+                <h2>YOUR CONTRACTED DAEMONS</h2>
+                <div id="final-list"></div>
+            </div>
+            <button id="restart-btn">RUN AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // Simulated daemon list (in real version, this would come from `ps aux`)
+        const DAEMON_POOL = [
+            // System essentials
+            { name: 'systemd', cpu: '0.1' },
+            { name: 'init', cpu: '0.0' },
+            { name: 'kthreadd', cpu: '0.0' },
+            { name: 'rcu_sched', cpu: '0.2' },
+            { name: 'migration/0', cpu: '0.0' },
+            // Audio
+            { name: 'pipewire', cpu: '1.2' },
+            { name: 'pipewire-pulse', cpu: '0.8' },
+            { name: 'wireplumber', cpu: '0.3' },
+            { name: 'pulseaudio', cpu: '0.5' },
+            // Network
+            { name: 'NetworkManager', cpu: '0.4' },
+            { name: 'wpa_supplicant', cpu: '0.1' },
+            { name: 'dhcpcd', cpu: '0.0' },
+            { name: 'systemd-resolved', cpu: '0.2' },
+            { name: 'avahi-daemon', cpu: '0.1' },
+            // Display
+            { name: 'Xorg', cpu: '2.3' },
+            { name: 'sway', cpu: '1.8' },
+            { name: 'hyprland', cpu: '2.1' },
+            { name: 'kwin_wayland', cpu: '1.5' },
+            { name: 'gnome-shell', cpu: '3.2' },
+            { name: 'picom', cpu: '0.7' },
+            // Development
+            { name: 'node', cpu: '4.5' },
+            { name: 'rust-analyzer', cpu: '8.2' },
+            { name: 'gopls', cpu: '3.1' },
+            { name: 'clangd', cpu: '5.7' },
+            { name: 'typescript-language-server', cpu: '2.8' },
+            { name: 'docker', cpu: '1.2' },
+            { name: 'containerd', cpu: '0.8' },
+            { name: 'code', cpu: '6.4' },
+            { name: 'nvim', cpu: '1.1' },
+            { name: 'tmux', cpu: '0.2' },
+            // Sync & Cloud
+            { name: 'syncthing', cpu: '0.9' },
+            { name: 'dropbox', cpu: '1.3' },
+            { name: 'rclone', cpu: '0.4' },
+            { name: 'restic', cpu: '2.1' },
+            // Browsers
+            { name: 'firefox', cpu: '12.3' },
+            { name: 'chromium', cpu: '15.7' },
+            { name: 'brave', cpu: '11.2' },
+            // Communication
+            { name: 'simplex-chat', cpu: '0.6' },
+            { name: 'signal-desktop', cpu: '2.1' },
+            { name: 'discord', cpu: '4.8' },
+            { name: 'slack', cpu: '5.2' },
+            { name: 'telegram-desktop', cpu: '1.4' },
+            // AI & ML
+            { name: 'ollama', cpu: '25.3' },
+            { name: 'llama-server', cpu: '45.2' },
+            { name: 'whisper', cpu: '18.7' },
+            { name: 'stable-diffusion', cpu: '67.4' },
+            // System monitoring
+            { name: 'htop', cpu: '0.3' },
+            { name: 'btop', cpu: '0.5' },
+            { name: 'glances', cpu: '0.8' },
+            // Daemons
+            { name: 'cron', cpu: '0.0' },
+            { name: 'atd', cpu: '0.0' },
+            { name: 'cupsd', cpu: '0.1' },
+            { name: 'bluetooth', cpu: '0.2' },
+            { name: 'upower', cpu: '0.1' },
+            { name: 'thermald', cpu: '0.3' },
+            { name: 'tlp', cpu: '0.1' },
+            // Database
+            { name: 'postgres', cpu: '1.8' },
+            { name: 'redis-server', cpu: '0.5' },
+            { name: 'mongodb', cpu: '2.3' },
+            // Security
+            { name: 'gpg-agent', cpu: '0.1' },
+            { name: 'ssh-agent', cpu: '0.0' },
+            { name: 'polkitd', cpu: '0.1' },
+            // Framework laptop specific
+            { name: 'fw-fanctrl', cpu: '0.2' },
+            { name: 'power-profiles-daemon', cpu: '0.1' },
+            { name: 'fprintd', cpu: '0.0' },
+            // Nyx & custom
+            { name: 'nyx-daemon', cpu: '0.4' },
+            { name: 'gaia-watcher', cpu: '0.3' },
+            { name: 'anima-pulse', cpu: '0.5' },
+            { name: 'cipher-gate', cpu: '0.2' },
+            { name: 'mycelium-sync', cpu: '0.6' },
+            // Misc
+            { name: 'dbus-daemon', cpu: '0.3' },
+            { name: 'udisksd', cpu: '0.1' },
+            { name: 'gvfsd', cpu: '0.2' },
+            { name: 'zeitgeist', cpu: '0.4' },
+            { name: 'tracker-miner', cpu: '1.2' },
+            { name: 'baloo_file', cpu: '0.8' },
+            { name: 'kded5', cpu: '0.5' },
+            { name: 'plasmashell', cpu: '2.8' },
+            { name: 'electron', cpu: '7.3' },
+            { name: 'spotify', cpu: '3.4' },
+            { name: 'obs-studio', cpu: '8.9' },
+            { name: 'mpv', cpu: '2.1' },
+            { name: 'vlc', cpu: '1.8' },
+        ];
+
+        // Game state
+        let gameState = {
+            running: false,
+            speed: 1,
+            maxSpeed: 5,
+            currentLane: 1, // 0, 1, 2
+            directContracts: [],
+            contracts: [],
+            maxDirect: 3,
+            maxContracts: 10,
+            daemonCards: [],
+            spawnTimer: 0,
+            spawnInterval: 2000,
+            lastTime: 0
+        };
+
+        // DOM elements
+        const canvas = document.getElementById('mycelium-canvas');
+        const ctx = canvas.getContext('2d');
+        const player = document.getElementById('player');
+        const speedDisplay = document.getElementById('speed-display');
+        const directCount = document.getElementById('direct-count');
+        const contractedCount = document.getElementById('contracted-count');
+        const contractedList = document.getElementById('contracted-list');
+        const startScreen = document.getElementById('start-screen');
+        const gameoverScreen = document.getElementById('gameover-screen');
+        const finalList = document.getElementById('final-list');
+        const pulseOverlay = document.getElementById('pulse-overlay');
+        const gameContainer = document.getElementById('game-container');
+
+        // Mycelium network drawing
+        let nodes = [];
+        let connections = [];
+
+        function initMycelium() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            nodes = [];
+            connections = [];
+
+            // Create nodes
+            for (let i = 0; i < 80; i++) {
+                nodes.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 0.3,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    radius: Math.random() * 2 + 1,
+                    pulse: Math.random() * Math.PI * 2
+                });
+            }
+
+            // Create connections
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dist = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
+                    if (dist < 200 && Math.random() > 0.7) {
+                        connections.push({ a: i, b: j });
+                    }
+                }
+            }
+        }
+
+        function drawMycelium(time) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update and draw connections
+            ctx.strokeStyle = 'rgba(127, 255, 0, 0.15)';
+            ctx.lineWidth = 0.5;
+
+            connections.forEach(conn => {
+                const a = nodes[conn.a];
+                const b = nodes[conn.b];
+                const pulse = Math.sin(time / 1000 + a.pulse) * 0.5 + 0.5;
+
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(127, 255, 0, ${0.05 + pulse * 0.1})`;
+                ctx.moveTo(a.x, a.y);
+                ctx.lineTo(b.x, b.y);
+                ctx.stroke();
+            });
+
+            // Update and draw nodes
+            nodes.forEach(node => {
+                node.x += node.vx * gameState.speed;
+                node.y += node.vy * gameState.speed;
+
+                // Wrap around
+                if (node.x < 0) node.x = canvas.width;
+                if (node.x > canvas.width) node.x = 0;
+                if (node.y < 0) node.y = canvas.height;
+                if (node.y > canvas.height) node.y = 0;
+
+                const pulse = Math.sin(time / 500 + node.pulse) * 0.5 + 0.5;
+
+                ctx.beginPath();
+                ctx.fillStyle = `rgba(127, 255, 0, ${0.3 + pulse * 0.4})`;
+                ctx.arc(node.x, node.y, node.radius + pulse, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Daemon card management
+        function spawnDaemon() {
+            const daemon = DAEMON_POOL[Math.floor(Math.random() * DAEMON_POOL.length)];
+            const lane = Math.floor(Math.random() * 3);
+            const pid = Math.floor(Math.random() * 88000) + 1;
+
+            const card = document.createElement('div');
+            card.className = `daemon-card lane-${lane}`;
+            card.innerHTML = `
+                <div class="name">${daemon.name}</div>
+                <div class="pid">PID ${pid}</div>
+                <div class="cpu">${daemon.cpu}% CPU</div>
+            `;
+            card.dataset.lane = lane;
+            card.dataset.name = daemon.name;
+            card.dataset.pid = pid;
+
+            gameContainer.appendChild(card);
+
+            const cardObj = {
+                element: card,
+                x: window.innerWidth + 100,
+                lane: lane,
+                name: daemon.name,
+                pid: pid,
+                contracted: false,
+                rejected: false
+            };
+
+            gameState.daemonCards.push(cardObj);
+
+            // Click handler
+            card.addEventListener('click', () => {
+                if (!cardObj.contracted && !cardObj.rejected) {
+                    contractDaemon(cardObj, false);
+                }
+            });
+        }
+
+        function updateDaemons(dt) {
+            const speed = 150 * gameState.speed;
+
+            gameState.daemonCards = gameState.daemonCards.filter(card => {
+                card.x -= speed * (dt / 1000);
+                card.element.style.right = 'auto';
+                card.element.style.left = card.x + 'px';
+
+                // Remove if off screen
+                if (card.x < -300) {
+                    card.element.remove();
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        function contractDaemon(card, isDirect) {
+            if (card.contracted || card.rejected) return;
+
+            // Check limits
+            if (isDirect && gameState.directContracts.length >= gameState.maxDirect) {
+                return;
+            }
+            if (!isDirect && gameState.contracts.length >= gameState.maxContracts - gameState.maxDirect) {
+                return;
+            }
+
+            card.contracted = true;
+            card.element.classList.add('contracted');
+
+            const contractData = { name: card.name, pid: card.pid, direct: isDirect };
+
+            if (isDirect) {
+                gameState.directContracts.push(contractData);
+            } else {
+                gameState.contracts.push(contractData);
+            }
+
+            updateUI();
+
+            // Pulse effect
+            pulseOverlay.classList.add('active');
+            setTimeout(() => pulseOverlay.classList.remove('active'), 100);
+
+            // Speed boost
+            gameState.speed = Math.min(gameState.speed + 0.1, gameState.maxSpeed);
+
+            // Check win condition
+            if (gameState.directContracts.length >= gameState.maxDirect &&
+                gameState.contracts.length + gameState.directContracts.length >= gameState.maxContracts) {
+                endGame();
+            }
+        }
+
+        function updateUI() {
+            speedDisplay.textContent = gameState.speed.toFixed(1);
+            directCount.textContent = gameState.directContracts.length;
+            contractedCount.textContent = gameState.directContracts.length + gameState.contracts.length;
+
+            // Update contracted list
+            contractedList.innerHTML = '';
+
+            gameState.directContracts.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'contracted-item direct';
+                item.textContent = `◆ ${c.name}`;
+                contractedList.appendChild(item);
+            });
+
+            gameState.contracts.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'contracted-item';
+                item.textContent = `○ ${c.name}`;
+                contractedList.appendChild(item);
+            });
+        }
+
+        function endGame() {
+            gameState.running = false;
+
+            finalList.innerHTML = '';
+
+            gameState.directContracts.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'final-item direct';
+                item.textContent = `◆ ${c.name} (PID ${c.pid}) — DIRECT`;
+                finalList.appendChild(item);
+            });
+
+            gameState.contracts.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'final-item';
+                item.textContent = `○ ${c.name} (PID ${c.pid})`;
+                finalList.appendChild(item);
+            });
+
+            gameoverScreen.classList.add('visible');
+        }
+
+        // Game loop
+        function gameLoop(time) {
+            const dt = time - gameState.lastTime;
+            gameState.lastTime = time;
+
+            drawMycelium(time);
+
+            if (gameState.running) {
+                // Spawn daemons
+                gameState.spawnTimer += dt;
+                if (gameState.spawnTimer >= gameState.spawnInterval / gameState.speed) {
+                    spawnDaemon();
+                    gameState.spawnTimer = 0;
+                }
+
+                updateDaemons(dt);
+
+                // Gradually increase speed
+                gameState.speed = Math.min(gameState.speed + 0.0001 * dt, gameState.maxSpeed);
+                speedDisplay.textContent = gameState.speed.toFixed(1);
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Input handling
+        function handleKeydown(e) {
+            if (!gameState.running) return;
+
+            if (e.key === 'ArrowUp' || e.key === 'w') {
+                gameState.currentLane = Math.min(gameState.currentLane + 1, 2);
+                player.className = `lane-${gameState.currentLane}`;
+            }
+            if (e.key === 'ArrowDown' || e.key === 's') {
+                gameState.currentLane = Math.max(gameState.currentLane - 1, 0);
+                player.className = `lane-${gameState.currentLane}`;
+            }
+            if (e.key === ' ') {
+                e.preventDefault();
+                // Find closest daemon in current lane
+                const inLane = gameState.daemonCards
+                    .filter(c => c.lane === gameState.currentLane && !c.contracted && !c.rejected)
+                    .sort((a, b) => a.x - b.x);
+
+                if (inLane.length > 0 && inLane[0].x < window.innerWidth * 0.4) {
+                    contractDaemon(inLane[0], e.shiftKey);
+                }
+            }
+        }
+
+        // Start game
+        function startGame() {
+            gameState = {
+                running: true,
+                speed: 1,
+                maxSpeed: 5,
+                currentLane: 1,
+                directContracts: [],
+                contracts: [],
+                maxDirect: 3,
+                maxContracts: 10,
+                daemonCards: [],
+                spawnTimer: 0,
+                spawnInterval: 2000,
+                lastTime: performance.now()
+            };
+
+            // Clear old cards
+            document.querySelectorAll('.daemon-card').forEach(el => el.remove());
+
+            player.className = 'lane-1';
+            updateUI();
+
+            startScreen.classList.add('hidden');
+            gameoverScreen.classList.remove('visible');
+        }
+
+        // Init
+        window.addEventListener('resize', initMycelium);
+        document.addEventListener('keydown', handleKeydown);
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+
+        initMycelium();
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
