@@ -23,6 +23,7 @@
             --invalid: #a44;
             --nyx: #9370db;
             --zoe: #ff69b4;
+            --clochette: #ffd700;
             --euterpe: #20b2aa;
             --omniscient: #4169e1;
         }
@@ -80,6 +81,7 @@
         .daemon-icon[data-daemon="leonardo"] { color: var(--gold); }
         .daemon-icon[data-daemon="nyx"] { color: var(--nyx); }
         .daemon-icon[data-daemon="zoe"] { color: var(--zoe); }
+        .daemon-icon[data-daemon="clochette"] { color: var(--clochette); }
         .daemon-icon[data-daemon="euterpe"] { color: var(--euterpe); }
         .daemon-icon[data-daemon="omniscient"] { color: var(--omniscient); }
 
@@ -114,6 +116,7 @@
         .daemon[data-daemon="leonardo"] { border-left: 3px solid var(--gold); }
         .daemon[data-daemon="nyx"] { border-left: 3px solid var(--nyx); }
         .daemon[data-daemon="zoe"] { border-left: 3px solid var(--zoe); }
+        .daemon[data-daemon="clochette"] { border-left: 3px solid var(--clochette); }
         .daemon[data-daemon="euterpe"] { border-left: 3px solid var(--euterpe); }
         .daemon[data-daemon="omniscient"] { border-left: 3px solid var(--omniscient); }
 
@@ -125,6 +128,7 @@
         .daemon[data-daemon="leonardo"] .symbol { color: var(--gold); }
         .daemon[data-daemon="nyx"] .symbol { color: var(--nyx); }
         .daemon[data-daemon="zoe"] .symbol { color: var(--zoe); }
+        .daemon[data-daemon="clochette"] .symbol { color: var(--clochette); }
         .daemon[data-daemon="euterpe"] .symbol { color: var(--euterpe); }
         .daemon[data-daemon="omniscient"] .symbol { color: var(--omniscient); }
 
@@ -265,6 +269,115 @@
         .tooltip:hover::before {
             opacity: 1;
         }
+
+        /* Copy button */
+        .message {
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.3rem;
+            right: 0.3rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 0.2rem 0.4rem;
+            font-size: 0.65rem;
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.2s, background 0.2s;
+            cursor: pointer;
+        }
+
+        .message:hover .copy-btn {
+            opacity: 0.6;
+        }
+
+        .copy-btn:hover {
+            opacity: 1 !important;
+            background: var(--surface);
+            color: var(--text);
+        }
+
+        .copy-btn.copied {
+            color: var(--valid);
+            border-color: var(--valid);
+        }
+
+        /* Keyboard shortcuts hint */
+        .shortcuts-hint {
+            position: fixed;
+            bottom: 3rem;
+            right: 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .shortcuts-hint.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .shortcuts-hint kbd {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 0.1rem 0.3rem;
+            font-family: inherit;
+            color: var(--gold);
+        }
+
+        /* Input history navigation indicator */
+        .history-indicator {
+            position: absolute;
+            top: -1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .history-indicator.visible {
+            opacity: 1;
+        }
+
+        #input-area {
+            position: relative;
+        }
+
+        /* Restore button */
+        .restore-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 0.4rem 0.6rem;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .restore-btn:hover {
+            border-color: var(--gold-dim);
+            color: var(--gold);
+        }
+
+        .restore-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -275,6 +388,7 @@
             <span class="daemon-icon active tooltip" data-daemon="leonardo" data-tooltip="Leonardo - Validation" title="φ Leonardo">φ</span>
             <span class="daemon-icon tooltip" data-daemon="nyx" data-tooltip="Nyx - Orchestration" title="☽ Nyx">☽</span>
             <span class="daemon-icon tooltip" data-daemon="zoe" data-tooltip="Zoe - Interface" title="✧ Zoe">✧</span>
+            <span class="daemon-icon tooltip" data-daemon="clochette" data-tooltip="Clochette - Messagère" title="✨ Clochette">✨</span>
             <span class="daemon-icon tooltip" data-daemon="euterpe" data-tooltip="Euterpe - Son" title="♪ Euterpe">♪</span>
             <span class="daemon-icon tooltip" data-daemon="omniscient" data-tooltip="Omniscient - Connaissance" title="👁 Omniscient">👁</span>
         </div>
@@ -291,62 +405,106 @@ Clique sur les icônes en haut pour parler aux autres daemons.</em>
     </div>
 
     <div id="input-area">
+        <span class="history-indicator" id="history-indicator"></span>
         <div class="mode-buttons">
             <button class="mode-btn active" data-mode="chat">Chat</button>
             <button class="mode-btn" data-mode="validate">Valider</button>
             <button class="mode-btn" data-mode="orchestrate">Orchestrer</button>
         </div>
+        <button class="restore-btn" id="restore" title="Restaurer dernier message (Ctrl+Z)" disabled>↺</button>
         <input type="text" id="input" placeholder="Parle au Panthéon..." autofocus>
         <button id="send">φ</button>
     </div>
 
+
     <footer>
-        φ = 1.618033988749895 | Pantheon vivant | Ctrl Droit pour ouvrir
+        φ = 1.618033988749895 | <kbd>?</kbd> Raccourcis | <kbd>1-6</kbd> Daemons | <kbd>↑↓</kbd> Historique
     </footer>
 
     <script>
+        // === DOM ELEMENTS ===
         const chat = document.getElementById('chat');
         const input = document.getElementById('input');
         const sendBtn = document.getElementById('send');
         const modeButtons = document.querySelectorAll('.mode-btn');
         const daemonIcons = document.querySelectorAll('.daemon-icon');
 
+        // === CONSTANTS ===
         const SYMBOLS = {
             leonardo: 'φ',
             nyx: '☽',
             zoe: '✧',
+            clochette: '✨',
             euterpe: '♪',
             omniscient: '👁'
         };
 
+        // === STATE ===
         let mode = 'chat';
         let currentDaemon = 'leonardo';
 
-        // Mode buttons
+        // === COPY TO CLIPBOARD ===
+        function copyToClipboard(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                btn.textContent = '✓';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '⎘';
+                    btn.classList.remove('copied');
+                }, 1500);
+            }).catch(() => {
+                // Fallback
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.cssText = 'position:fixed;opacity:0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                btn.textContent = '✓';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '⎘';
+                    btn.classList.remove('copied');
+                }, 1500);
+            });
+        }
+
+        // === MODE BUTTONS ===
         modeButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 modeButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 mode = btn.dataset.mode;
-                input.placeholder = {
-                    'chat': `Parle à ${currentDaemon}...`,
-                    'validate': 'Hypothèse à valider...',
-                    'orchestrate': 'Tâche à orchestrer...'
-                }[mode];
+                updatePlaceholder();
             });
         });
 
-        // Daemon selection
-        daemonIcons.forEach(icon => {
-            icon.addEventListener('click', () => {
-                daemonIcons.forEach(i => i.classList.remove('active'));
+        function updatePlaceholder() {
+            input.placeholder = {
+                'chat': `Parle à ${currentDaemon}...`,
+                'validate': 'Hypothèse à valider...',
+                'orchestrate': 'Tâche à orchestrer...'
+            }[mode];
+        }
+
+        // === DAEMON SELECTION ===
+        function selectDaemon(daemonName) {
+            daemonIcons.forEach(i => i.classList.remove('active'));
+            const icon = document.querySelector(`[data-daemon="${daemonName}"]`);
+            if (icon) {
                 icon.classList.add('active');
-                currentDaemon = icon.dataset.daemon;
-                input.placeholder = `Parle à ${currentDaemon}...`;
+                currentDaemon = daemonName;
+                updatePlaceholder();
                 sendBtn.textContent = SYMBOLS[currentDaemon];
-            });
+            }
+        }
+
+        daemonIcons.forEach(icon => {
+            icon.addEventListener('click', () => selectDaemon(icon.dataset.daemon));
         });
 
+        // === MESSAGE DISPLAY ===
         function addMessage(content, isUser = false, daemon = 'leonardo', extra = null) {
             const div = document.createElement('div');
             div.className = `message ${isUser ? 'user' : 'daemon'}`;
@@ -354,10 +512,21 @@ Clique sur les icônes en haut pour parler aux autres daemons.</em>
                 div.dataset.daemon = daemon;
             }
 
+            // Copy button
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.textContent = '⎘';
+            copyBtn.title = 'Copier';
+            copyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const textContent = div.textContent.replace('⎘', '').replace('✓', '').trim();
+                copyToClipboard(textContent, copyBtn);
+            });
+
             if (isUser) {
                 div.textContent = content;
             } else {
-                let html = `<span class="symbol">${SYMBOLS[daemon] || 'φ'}</span>${content}`;
+                let html = `<span class="symbol">${SYMBOLS[daemon] || 'φ'}</span>${escapeHtml(content)}`;
                 if (extra && extra.phi_r !== undefined) {
                     const cls = extra.phi_r >= 1.0 ? 'valid' :
                                extra.phi_r >= 0.618 ? 'partial' : 'invalid';
@@ -366,9 +535,16 @@ Clique sur les icônes en haut pour parler aux autres daemons.</em>
                 div.innerHTML = html;
             }
 
+            div.appendChild(copyBtn);
             chat.appendChild(div);
             chat.scrollTop = chat.scrollHeight;
             return div;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         function addThinking(daemon) {
@@ -381,10 +557,13 @@ Clique sur les icônes en haut pour parler aux autres daemons.</em>
             return div;
         }
 
+        // === SEND MESSAGE ===
         async function send() {
             const text = input.value.trim();
             if (!text) return;
 
+            addToHistory(text);
+            saveForRestore(text);
             addMessage(text, true);
             input.value = '';
             sendBtn.disabled = true;
@@ -429,7 +608,6 @@ Clique sur les icônes en haut pour parler aux autres daemons.</em>
                         { symbol: result.symbol, phi_r: result.phi_r }
                     );
                 } else if (mode === 'orchestrate') {
-                    // Show all daemon responses
                     for (const [daemon, resp] of Object.entries(result)) {
                         addMessage(resp, false, daemon);
                     }
@@ -444,13 +622,46 @@ Clique sur les icônes en haut pour parler aux autres daemons.</em>
             input.focus();
         }
 
-        sendBtn.addEventListener('click', send);
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') send();
+        // === KEYBOARD HANDLING ===
+        // Simple: Enter to send, standard Ctrl+C/V work naturally
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                send();
+            }
         });
 
-        // Focus on load
+        // === BUTTON HANDLERS ===
+        sendBtn.addEventListener('click', send);
+
+        // === INITIALIZATION ===
         input.focus();
+
+        // Auto-hide shortcuts hint
+        document.addEventListener('click', (e) => {
+            if (!shortcutsHint.contains(e.target) && e.target.textContent !== '?') {
+                shortcutsHint.classList.remove('visible');
+            }
+        });
+
+        // Add copy buttons to existing messages
+        document.querySelectorAll('.message').forEach(msg => {
+            if (!msg.querySelector('.copy-btn')) {
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.textContent = '⎘';
+                copyBtn.title = 'Copier';
+                copyBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const textContent = msg.textContent.replace('⎘', '').replace('✓', '').trim();
+                    copyToClipboard(textContent, copyBtn);
+                });
+                msg.appendChild(copyBtn);
+            }
+        });
+
+        console.log('φ Pantheon initialized - Keyboard shortcuts active, no killswitches');
     </script>
 </body>
 </html>

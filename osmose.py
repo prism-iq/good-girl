@@ -12,7 +12,12 @@ import time
 from phi import PHI, PI
 
 TARGET = PI + PHI  # 4.7596
-LANGS = ["rust", "go", "zig", "python", "cpp", "c", "nim", "haskell", "lisp", "lua"]
+LANGS = [
+    "rust", "go", "zig", "python", "cpp", "c", "nim", "haskell", "lisp", "lua",
+    "elixir", "ocaml", "julia", "kotlin", "swift", "ruby", "scala", "forth",
+    "erlang", "prolog", "assembly", "v", "crystal", "jai", "odin", "gleam",
+    "raku", "ada", "fortran", "cobol", "scheme", "racket", "clojure", "f#",
+]
 LETTERS = "aefghilmoprstuw"
 
 class Organite:

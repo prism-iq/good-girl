@@ -153,7 +153,7 @@ if __name__ == '__main__':
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), PantheonHandler) as httpd:
         print(f"φ Pantheon server on http://localhost:{PORT}")
-        print(f"  Daemons: φ Leonardo | ☽ Nyx | ✧ Zoe | ♪ Euterpe | 👁 Omniscient")
+        print(f"  Daemons: φ Leonardo | ☽ Nyx | ✧ Zoe | ✨ Clochette | ♪ Euterpe | 👁 Omniscient")
         print(f"  Simplex: {len(simplex.channels)} canaux sécurisés")
         print(f"  Post-Quantique: SHA3 + SHAKE256 + φ-hash + Merkle")
         httpd.serve_forever()

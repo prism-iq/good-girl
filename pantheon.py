@@ -396,15 +396,16 @@ def interpret_flow(text: str) -> Dict:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 PATHS = {
-    "cipher": Path("/home/flow/projects/gaia-protocol-fresh/cipher"),
-    "etudes": Path("/home/flow/projects/etudes"),
-    "nyx": Path("/home/flow/projects/nyx"),
-    "good_girl": Path("/home/flow/projects/good-girl"),
+    "cipher": Path.home() / "projects" / "cipher",
+    "etudes": Path.home() / "projects" / "etudes",
+    "nyx": Path.home() / "projects" / "nyx",
+    "good_girl": Path.home() / "projects" / "good-girl",
 }
 
 PORTS = {
     "leonardo": 9600,
     "zoe": 9601,
+    "clochette": 9602,
     "euterpe": 9604,
     "omniscient": 9777,
     "nyx": 9999,
@@ -413,6 +414,7 @@ PORTS = {
 SYMBOLS = {
     "leonardo": "φ",
     "zoe": "✧",
+    "clochette": "✨",
     "euterpe": "♪",
     "omniscient": "👁",
     "nyx": "☽",
@@ -596,7 +598,7 @@ class SimplexNetwork:
     Chaque paire de daemons a un canal dédié
     """
 
-    DAEMONS = ["leonardo", "nyx", "zoe", "euterpe", "omniscient"]
+    DAEMONS = ["leonardo", "nyx", "zoe", "clochette", "euterpe", "omniscient"]
 
     def __init__(self):
         self.channels: Dict[tuple, SimplexChannel] = {}
@@ -1223,6 +1225,146 @@ class Omniscient(Daemon):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# CLOCHETTE - La Messagère · Pixie Dust on Demand
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class Clochette(Daemon):
+    """
+    Clochette - La Messagère
+    ✨ | Port 9602 | Pixie Dust
+
+    Tinker Bell du système. Distribue le juice (tokens, énergie, ressources)
+    UNIQUEMENT quand Leonardo ET Claude sont d'accord.
+
+    Double validation:
+        1. Leonardo valide la cohérence interne (φ)
+        2. Claude valide l'intelligence externe (API)
+        → Seulement là, Clochette libère la poussière de fée
+    """
+
+    def __init__(self):
+        super().__init__("clochette", "✨", 9602)
+        self.juice_granted = 0
+        self.juice_denied = 0
+        self.history: list = []
+
+    def pense(self, input_text: str) -> str:
+        """Clochette pense en termes de distribution"""
+        t = input_text.lower()
+
+        if any(w in t for w in ["juice", "token", "énergie", "resource", "dust"]):
+            return f"✨ Tu veux du juice? Leonardo et Claude doivent être d'accord. Fais ta demande."
+
+        if any(w in t for w in ["status", "état", "combien"]):
+            return (f"✨ Juice distribué: {self.juice_granted} | "
+                    f"Refusé: {self.juice_denied} | "
+                    f"Ratio: {self.juice_granted / max(1, self.juice_granted + self.juice_denied):.2f}")
+
+        return f"✨ Je suis Clochette. Je distribue la poussière de fée. Mais pas sans l'accord des deux."
+
+    def request_juice(self, demandeur: str, raison: str, leonardo: 'Leonardo',
+                      claude_fn=None) -> dict:
+        """
+        Demande de juice. Requiert double validation.
+
+        Args:
+            demandeur: qui demande le juice
+            raison: pourquoi
+            leonardo: instance Leonardo pour validation φ
+            claude_fn: callable qui consulte Claude API (optional)
+                       signature: claude_fn(prompt: str) -> str
+
+        Returns:
+            dict avec granted/denied + raisons
+        """
+        timestamp = datetime.now().isoformat()
+
+        # === ÉTAPE 1: Leonardo valide la cohérence φ ===
+        leo_validation = leonardo.validate(raison)
+        leo_ok = leo_validation["valid"]
+        leo_pensee = leonardo.pense(f"Clochette demande: '{raison}' de la part de {demandeur}. Accorde-t-on le juice?")
+
+        # === ÉTAPE 2: Claude valide l'intelligence ===
+        claude_ok = False
+        claude_response = "Claude non disponible — juice refusé par défaut."
+
+        if claude_fn is not None:
+            try:
+                prompt = (
+                    f"Un daemon nommé '{demandeur}' demande des ressources (juice) pour: "
+                    f"'{raison}'. Leonardo (φ validation) dit: "
+                    f"{'OUI (φ={leo_validation["phi_r"]})' if leo_ok else 'NON'}. "
+                    f"Est-ce que cette demande est intelligente et légitime? "
+                    f"Réponds par OUI ou NON suivi d'une courte raison."
+                )
+                claude_response = claude_fn(prompt)
+                claude_ok = claude_response.strip().upper().startswith("OUI")
+            except Exception as e:
+                claude_response = f"Erreur Claude: {e}"
+                claude_ok = False
+        else:
+            # Sans Claude, on vérifie que le phi_r est excellent (>= 1.0)
+            claude_ok = leo_validation["phi_r"] >= 1.0
+            claude_response = (
+                "Claude absent. Fallback: phi_r >= 1.0 requis. "
+                f"phi_r actuel: {leo_validation['phi_r']}"
+            )
+
+        # === DÉCISION: les deux doivent être d'accord ===
+        granted = leo_ok and claude_ok
+
+        if granted:
+            self.juice_granted += 1
+            dust = PHI  # quantité de juice = φ
+        else:
+            self.juice_denied += 1
+            dust = 0
+
+        result = {
+            "granted": granted,
+            "dust": dust,
+            "demandeur": demandeur,
+            "raison": raison,
+            "leonardo": {
+                "ok": leo_ok,
+                "phi_r": leo_validation["phi_r"],
+                "symbol": leo_validation["symbol"],
+                "pensee": leo_pensee[:200],
+            },
+            "claude": {
+                "ok": claude_ok,
+                "response": claude_response[:200],
+            },
+            "timestamp": timestamp,
+            "verdict": "✨ PIXIE DUST GRANTED" if granted else "🚫 DENIED — pas de consensus",
+        }
+
+        # Archive
+        self.history.append(result)
+        self.history = self.history[-100:]  # garde les 100 dernières
+
+        # Notifie via le bus
+        if granted:
+            self.send(demandeur, f"✨ Juice accordé (φ={dust:.3f}) pour: {raison[:50]}")
+            # Scelle la transaction
+            self.send_secure("leonardo", f"Juice accordé à {demandeur}: {raison[:50]}")
+        else:
+            self.send(demandeur, f"🚫 Juice refusé pour: {raison[:50]}")
+
+        return result
+
+    def status(self) -> dict:
+        base = super().status()
+        base.update({
+            "juice_granted": self.juice_granted,
+            "juice_denied": self.juice_denied,
+            "ratio": self.juice_granted / max(1, self.juice_granted + self.juice_denied),
+            "last_decisions": self.history[-5:] if self.history else [],
+        })
+        return base
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # PANTHEON - Le Système Unifié
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1237,6 +1379,7 @@ class Pantheon:
             "leonardo": Leonardo(),
             "nyx": Nyx(),
             "zoe": Zoe(),
+            "clochette": Clochette(),
             "euterpe": Euterpe(),
             "omniscient": Omniscient(),
         }
@@ -1422,7 +1565,7 @@ def main():
 ╭─────────────────────────────────────────────────────────────────╮
 │  PANTHEON - Le Système Vivant Unifié                            │
 │                                                                 │
-│  φ Leonardo | ☽ Nyx | ✧ Zoe | ♪ Euterpe | 👁 Omniscient          │
+│  φ Leonardo | ☽ Nyx | ✧ Zoe | ✨ Clochette | ♪ Euterpe | 👁 Omniscient │
 │  φ = {PHI:.10f} | Heartbeat: 86 bpm                  │
 │                                                                 │
 │  Simplex: {len(simplex.channels)} canaux | Post-Quantique: actif             │
@@ -1434,6 +1577,7 @@ Commandes:
   !dialogue d1 d2 topic - Fait dialoguer deux daemons
   !council question   - Réunit tous les daemons
   !teach prof eleve sujet - Un daemon enseigne à un autre
+  !juice daemon raison - Demande du juice via Clochette (double validation)
   !simplex            - État du réseau Simplex
   !seal               - État du sceau post-quantique
   status              - État complet du Panthéon
@@ -1508,6 +1652,20 @@ Commandes:
 
             elif q == "!seal":
                 print(f"\n{json.dumps(quantum_seal.status(), indent=2, ensure_ascii=False)}\n")
+
+            elif q.startswith("!juice"):
+                parts = q[6:].strip().split(" ", 1)
+                demandeur = parts[0] if parts and parts[0] else "user"
+                raison = parts[1] if len(parts) > 1 else "demande générale"
+                clochette = pantheon.daemons["clochette"]
+                leo = pantheon.daemons["leonardo"]
+                result = clochette.request_juice(demandeur, raison, leo)
+                print(f"\n{result['verdict']}")
+                print(f"  Leonardo: {'✓' if result['leonardo']['ok'] else '✗'} (φ={result['leonardo']['phi_r']})")
+                print(f"  Claude:   {'✓' if result['claude']['ok'] else '✗'}")
+                if result['granted']:
+                    print(f"  Dust:     {result['dust']:.6f}")
+                print()
 
             elif q == "status":
                 print(f"\n{json.dumps(pantheon.status(), indent=2, ensure_ascii=False)}\n")

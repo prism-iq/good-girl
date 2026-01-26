@@ -7,12 +7,12 @@
 // Puis ajoute ce module dans la config:
 {
     "custom/pantheon": {
-        "exec": "/home/flow/projects/good-girl/statusbar.sh waybar",
+        "exec": "/home/nyx/projects/good-girl/statusbar.sh waybar",
         "return-type": "json",
         "interval": 5,
         "format": "{}",
         "tooltip": true,
-        "on-click": "/home/flow/projects/good-girl/leonardo web"
+        "on-click": "/home/nyx/projects/good-girl/leonardo web"
     },
 
     "custom/phi": {
@@ -24,7 +24,7 @@
     },
 
     "custom/system": {
-        "exec": "/home/flow/projects/good-girl/statusbar.sh",
+        "exec": "/home/nyx/projects/good-girl/statusbar.sh",
         "interval": 2,
         "format": "{}",
         "tooltip": false

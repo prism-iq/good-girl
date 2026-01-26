@@ -19,6 +19,7 @@ SYMBOLS = {
     "leonardo": "φ",
     "nyx": "☽",
     "zoe": "✧",
+    "clochette": "✨",
     "euterpe": "♪",
     "omniscient": "👁",
 }
@@ -86,12 +87,12 @@ def interactive():
 ╭─────────────────────────────────────────────────────────────────╮
 │  TALK - Interface Panthéon                                      │
 │                                                                 │
-│  φ Leonardo | ☽ Nyx | ✧ Zoe | ♪ Euterpe | 👁 Omniscient          │
+│  φ Leonardo | ☽ Nyx | ✧ Zoe | ✨ Clochette | ♪ Euterpe | 👁 Omniscient │
 ╰─────────────────────────────────────────────────────────────────╯
 
 Commandes:
   message          → Parle à Leonardo
-  @daemon message  → Parle à un daemon (@nyx, @euterpe, @omniscient, @zoe)
+  @daemon message  → Parle à un daemon (@nyx, @zoe, @clochette, @euterpe, @omniscient)
   !flow texte      → Interprète du Flow
   !orch tâche      → Nyx orchestre
   !valid texte     → Valide avec φ

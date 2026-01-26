@@ -22,10 +22,10 @@ FIBONACCI = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610]
 
 # Chemins vers la connaissance
 PATHS = {
-    "cipher": Path("/home/flow/projects/gaia-protocol-fresh/cipher"),
-    "etudes": Path("/home/flow/projects/etudes"),
-    "nyx": Path("/home/flow/projects/nyx"),
-    "good_girl": Path("/home/flow/projects/good-girl"),
+    "cipher": Path.home() / "projects" / "cipher",
+    "etudes": Path.home() / "projects" / "etudes",
+    "nyx": Path.home() / "projects" / "nyx",
+    "good_girl": Path.home() / "projects" / "good-girl",
 }
 
 
@@ -325,7 +325,7 @@ Cette fréquence résonne avec le cerveau."""
 Chaque anime encode une sagesse. Regarde les patterns."""
 
         # Daemons
-        for daemon in ["nyx", "zoe", "omniscient", "euterpe", "shiva"]:
+        for daemon in ["nyx", "zoe", "clochette", "euterpe", "omniscient"]:
             if daemon in q:
                 content = self.connaissance.cherche(daemon)
                 if content:

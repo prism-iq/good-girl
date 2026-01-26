@@ -22,10 +22,10 @@ FIB_SET = set(FIBONACCI)
 
 # Projets
 PROJECTS = {
-    "good-girl": Path("/home/flow/projects/good-girl"),
-    "nyx": Path("/home/flow/projects/nyx"),
-    "etudes": Path("/home/flow/projects/etudes"),
-    "cipher": Path("/home/flow/projects/gaia-protocol-fresh/cipher"),
+    "good-girl": Path.home() / "projects" / "good-girl",
+    "nyx": Path.home() / "projects" / "nyx",
+    "etudes": Path.home() / "projects" / "etudes",
+    "cipher": Path.home() / "projects" / "cipher",
 }
 
 CODE_EXTENSIONS = {".py", ".js", ".ts", ".rs", ".go", ".sh", ".md", ".html", ".css"}
